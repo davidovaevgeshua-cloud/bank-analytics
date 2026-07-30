@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Расходы банковского сектора (102 форма ЦБ)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0f1420;--panel:#161d2e;--panel2:#1c2438;--border:#2a3450;--text:#e7ebf3;--muted:#8a92a8;--pos:#3ddc84;--neg:#ff5c6a;--accent:#4f8cff;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 70px;}
+  h1{font-size:23px;font-weight:600;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:13.5px;margin-bottom:30px;}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .card .label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .card .value{font-size:20px;font-weight:600;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:22px 24px;margin-bottom:24px;}
+  section > .sec-num{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+  h2{font-size:16.5px;font-weight:600;margin:0 0 16px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:500;font-size:12px;}
+  td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr:hover td{background:var(--panel2);}
+  .note{font-size:13px;color:var(--muted);}
+  .note b{color:var(--text);}
+  .commentary{background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;padding:14px 16px;margin-top:16px;font-size:13.5px;}
+  .commentary b{color:var(--text);}
+  canvas{max-height:380px;}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;max-width:420px;}
+  .selector-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .legend-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Расходы банковского сектора (102 форма ЦБ)</h1>
+  <div class="subtitle">CIR (Cost-to-Income Ratio) = АХР, символ 48000 / (чистый процентный доход + чистый комиссионный доход).<br>Чистый процентный доход = симв. 11000 − 31000. Чистый комиссионный доход = (12000+27000) − (32000+33000). Обновление на 24.07.2026, ряд январь 2025 – май 2026 (сектор — по март 2026).</div>
+
+  <!-- ============ SECTION 2: SECTOR QUARTERLY (ISOLATED) ============ -->
+  <section>
+    <div class="sec-num">Раздел 1</div>
+    <h2>CIR сектора, по кварталам, %</h2>
+    <canvas id="sectorQChart"></canvas>
+    <table style="margin-top:14px">
+      <thead><tr><th>Квартал</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
+      <tbody id="sectorQTable"></tbody>
+    </table>
+    <div class="commentary" id="sectorCommentary"></div>
+  </section>
+
+  <!-- ============ SECTION 3: SINGLE BANK MONTHLY (ISOLATED) ============ -->
+  <section>
+    <div class="sec-num">Раздел 2</div>
+    <h2>CIR по выбранному банку, по месяцам, %</h2>
+    <div class="selector-row"><select id="bankSelect"></select></div>
+    <canvas id="bankCirChart"></canvas>
+    <table style="margin-top:14px">
+      <thead><tr><th>Месяц</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
+      <tbody id="bankCirTable"></tbody>
+    </table>
+    <div class="commentary" id="bankCommentary"></div>
+  </section>
+
+  <!-- ============ SECTION 4: MULTI-BANK CUMULATIVE ============ -->
+  <section>
+    <div class="sec-num">Раздел 3</div>
+    <h2>CIR по банкам, помесячно (нарастающим итогом с начала года)</h2>
+    <canvas id="multiBankChart" style="max-height:440px"></canvas>
+    <div class="legend-hint">Клик по имени банка в подписи внизу — скрыть/показать линию. Наведение курсора прямо на линию также показывает, какому банку она принадлежит.</div>
+  </section>
+
+</div>
+
+<script>
+const DATA = __PAYLOAD_JSON__;
+
+function fmt1(x){ if(x===null||x===undefined) return '—'; return x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function fmtSigned(x){ if(x===null||x===undefined) return '—'; const s = x>0?'+':''; return s+x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+
+const gridOpts = {
+  scales: { x:{ticks:{color:'#8a92a8'},grid:{display:false}}, y:{ticks:{color:'#8a92a8',callback:v=>v+'%'},grid:{color:'#2a3450'}} },
+  plugins: { legend:{labels:{color:'#e7ebf3'}} }
+};
+
+/* ---------------- SECTION 1: sector quarterly isolated ---------------- */
+new Chart(document.getElementById('sectorQChart'), {
+  type:'line',
+  data:{ labels: DATA.sector_iso.map(q=>q.label),
+    datasets:[{ label:'CIR, %', data: DATA.sector_iso.map(q=>q.cir),
+      borderColor:'#4f8cff', backgroundColor:'rgba(79,140,255,0.12)', fill:true, tension:0.2, pointRadius:4 }]},
+  options: gridOpts
+});
+const qTbody = document.getElementById('sectorQTable');
+DATA.sector_iso.forEach(q=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${q.label}</td><td class="num">${fmt1(q.chpd)}</td><td class="num">${fmt1(q.comm_net)}</td><td class="num">${fmt1(q.opex)}</td><td class="num">${fmt1(q.cir)}</td>`;
+  qTbody.appendChild(tr);
+});
+
+// sector commentary: last quarter vs previous quarter
+(function(){
+  const last = DATA.sector_iso[DATA.sector_iso.length-1];
+  const prev = DATA.sector_iso[DATA.sector_iso.length-2];
+  const incLast = last.chpd + last.comm_net, incPrev = prev.chpd + prev.comm_net;
+  const incGrowth = (incLast-incPrev)/Math.abs(incPrev)*100;
+  const opexGrowth = (last.opex-prev.opex)/Math.abs(prev.opex)*100;
+  const cirDelta = last.cir - prev.cir;
+  const dir = cirDelta < 0 ? 'снизился' : 'вырос';
+  let driver;
+  if (cirDelta < 0) {
+    driver = opexGrowth < incGrowth
+      ? (opexGrowth < 0
+          ? `в первую очередь за счёт сокращения расходов (АХР ${fmtSigned(opexGrowth)}% к ${prev.label}), при этом доходы (ЧПД + чистые комиссии) изменились на ${fmtSigned(incGrowth)}%`
+          : `за счёт опережающего роста доходов (ЧПД + чистые комиссии ${fmtSigned(incGrowth)}%) над ростом расходов (АХР ${fmtSigned(opexGrowth)}%)`)
+      : `несмотря на более быстрый рост расходов (АХР ${fmtSigned(opexGrowth)}%), чем доходов (${fmtSigned(incGrowth)}%) — компенсировано базой предыдущего периода`;
+  } else {
+    driver = opexGrowth > incGrowth
+      ? `в первую очередь из-за роста расходов (АХР ${fmtSigned(opexGrowth)}%), опередившего рост доходов (ЧПД + чистые комиссии ${fmtSigned(incGrowth)}%)`
+      : `из-за снижения доходов (ЧПД + чистые комиссии ${fmtSigned(incGrowth)}%), опередившего динамику расходов (АХР ${fmtSigned(opexGrowth)}%)`;
+  }
+  document.getElementById('sectorCommentary').innerHTML =
+    `<b>${last.label}:</b> CIR сектора ${dir} до ${fmt1(last.cir)}% с ${fmt1(prev.cir)}% в ${prev.label} (${fmtSigned(cirDelta)} п.п.) — ${driver}.`;
+})();
+
+/* ---------------- SECTION 3: single bank monthly isolated ---------------- */
+const select = document.getElementById('bankSelect');
+DATA.bank_order.forEach(regn=>{
+  const opt = document.createElement('option');
+  opt.value = regn; opt.textContent = DATA.names[regn];
+  select.appendChild(opt);
+});
+
+let bankChart = null;
+function renderBank(regn){
+  const iso = DATA.iso[regn];
+  const months = DATA.all_months;
+  const labels = DATA.month_labels;
+  if (bankChart) bankChart.destroy();
+  bankChart = new Chart(document.getElementById('bankCirChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'CIR, %', data: months.map(m => iso[m] ? iso[m].cir : null),
+      borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', fill:true, tension:0.2, pointRadius:4, spanGaps:false }]},
+    options: gridOpts
+  });
+  const tbody = document.getElementById('bankCirTable');
+  tbody.innerHTML = '';
+  months.forEach((m,i)=>{
+    const v = iso[m];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${labels[i]}</td><td class="num">${v?fmt1(v.chpd):'—'}</td><td class="num">${v?fmt1(v.comm_net):'—'}</td><td class="num">${v?fmt1(v.opex):'—'}</td><td class="num">${v?fmt1(v.cir):'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // commentary: last two available isolated months
+  const avail = months.filter(m => iso[m] !== null);
+  const commentaryEl = document.getElementById('bankCommentary');
+  if (avail.length < 2) {
+    commentaryEl.innerHTML = '<b>Недостаточно данных</b> для помесячного сравнения по этому банку.';
+    return;
+  }
+  const lastM = avail[avail.length-1], prevM = avail[avail.length-2];
+  const last = iso[lastM], prev = iso[prevM];
+  const lastLabel = labels[months.indexOf(lastM)], prevLabel = labels[months.indexOf(prevM)];
+  const incLast = last.chpd + last.comm_net, incPrev = prev.chpd + prev.comm_net;
+  const incGrowth = (incLast-incPrev)/Math.abs(incPrev)*100;
+  const opexGrowth = (last.opex-prev.opex)/Math.abs(prev.opex)*100;
+  const cirDelta = last.cir - prev.cir;
+  const dir = cirDelta < 0 ? 'снизился' : 'вырос';
+  let driver;
+  if (cirDelta < 0) {
+    driver = opexGrowth < incGrowth
+      ? (opexGrowth < 0
+          ? `в первую очередь за счёт сокращения расходов (АХР ${fmtSigned(opexGrowth)}%), при этом доходы изменились на ${fmtSigned(incGrowth)}%`
+          : `за счёт опережающего роста доходов (${fmtSigned(incGrowth)}%) над ростом расходов (АХР ${fmtSigned(opexGrowth)}%)`)
+      : `при этом расходы выросли сильнее доходов (АХР ${fmtSigned(opexGrowth)}% против ${fmtSigned(incGrowth)}%) — эффект перекрыт базой предыдущего месяца`;
+  } else {
+    driver = opexGrowth > incGrowth
+      ? `в первую очередь из-за роста расходов (АХР ${fmtSigned(opexGrowth)}%), опередившего рост доходов (${fmtSigned(incGrowth)}%)`
+      : `из-за снижения доходов (${fmtSigned(incGrowth)}%), опередившего динамику расходов (АХР ${fmtSigned(opexGrowth)}%)`;
+  }
+  commentaryEl.innerHTML = `<b>${DATA.names[regn]}, ${lastLabel}:</b> CIR ${dir} до ${fmt1(last.cir)}% с ${fmt1(prev.cir)}% в ${prevLabel} (${fmtSigned(cirDelta)} п.п.) — ${driver}.`;
+}
+select.addEventListener('change', e => renderBank(e.target.value));
+renderBank(String(DATA.bank_order[0]));
+
+/* ---------------- SECTION 4: multi-bank cumulative ---------------- */
+const palette = ['#4f8cff','#ff5c6a','#3ddc84','#f2b134','#9b6bd6','#3ec6e0','#e0793f','#7cc47f','#c94f7c','#6f8fb0','#d4a24c','#5ba3a3','#e78ac3'];
+new Chart(document.getElementById('multiBankChart'), {
+  type:'line',
+  data:{
+    labels: DATA.month_labels,
+    datasets: DATA.bank_order.map((regn,i) => ({
+      label: DATA.names[regn],
+      data: DATA.all_months.map(m => DATA.cum[regn][m] ? DATA.cum[regn][m].cir : null),
+      borderColor: palette[i % palette.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      tension: 0.2,
+      spanGaps: true
+    }))
+  },
+  options: {
+    interaction: { mode: 'nearest', axis: 'xy', intersect: true },
+    plugins: {
+      legend: { position:'bottom', labels:{ color:'#e7ebf3', boxWidth:12, font:{size:11} } },
+      tooltip: {
+        callbacks: {
+          title: () => '',
+          label: c => c.dataset.label + ': ' + (c.parsed.y!==null ? c.parsed.y.toFixed(1)+'%' : 'н/д')
+        }
+      }
+    },
+    scales: {
+      y: { ticks:{ color:'#8a92a8', callback:v=>v+'%' }, grid:{ color:'#2a3450' } },
+      x: { ticks:{ color:'#8a92a8' }, grid:{ display:false } }
+    }
+  }
+});
+</script>
+</body>
+</html>
