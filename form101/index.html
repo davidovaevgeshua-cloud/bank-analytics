@@ -31,6 +31,8 @@
   canvas{max-height:380px;}
   select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;max-width:420px;}
   .selector-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .bank-stats{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px;font-size:13.5px;color:var(--muted);}
+  .bank-stats b{font-size:15px;color:var(--text);}
 </style>
 </head>
 <body>
@@ -82,6 +84,7 @@
   <section>
     <h2>Динамика по выбранному банку — сравнение по годам</h2>
     <div class="selector-row"><select id="bankSelect"></select></div>
+    <div class="bank-stats" id="bankStatsRow"></div>
     <canvas id="bankMonthlyChart"></canvas>
     <div style="height:22px"></div>
     <canvas id="bankYtdChart"></canvas>
@@ -205,12 +208,30 @@ DATA.bank_order.forEach(regn=>{
   select.appendChild(opt);
 });
 
+function renderBankStats(c){
+  if(!c || !c.last_year){
+    document.getElementById('bankStatsRow').innerHTML = '<span>Недостаточно данных по этому банку</span>';
+    return;
+  }
+  const monthlyYoy = (c.prev_monthly!==null&&c.prev_monthly!==undefined)
+    ? pctStr(c.last_monthly, c.prev_monthly) + ' г/г' : 'нет данных за прошлый год';
+  const ytdYoy = (c.prev_ytd!==null&&c.prev_ytd!==undefined)
+    ? pctStr(c.last_ytd, c.prev_ytd) + ' г/г' : 'нет данных за прошлый год';
+  const fullYearHtml = c.last_full_year
+    ? `<b class="${pctClass(c.last_full_val,c.prev_full_val)}">${fmt(c.last_full_val)}</b> млрд ₽ за ${c.last_full_year} г. (${pctStr(c.last_full_val,c.prev_full_val)} г/г)`
+    : 'полный год ещё не завершён';
+  document.getElementById('bankStatsRow').innerHTML =
+    `<span>${c.last_month_label} ${c.last_year}: <b class="${pctClass(c.last_monthly,c.prev_monthly)}">${fmt(c.last_monthly)}</b> млрд ₽ (${monthlyYoy})</span>` +
+    `<span>YTD: <b class="${pctClass(c.last_ytd,c.prev_ytd)}">${fmt(c.last_ytd)}</b> млрд ₽ (${ytdYoy})</span>` +
+    `<span>${fullYearHtml}</span>`;
+}
+
 let bankMonthlyChart=null, bankYtdChart=null;
 function renderBank(regn){
   const b = DATA.banks[regn];
   if(!b) return;
 
-  setCards(b.cards);
+  renderBankStats(b.cards);
 
   if(bankMonthlyChart) bankMonthlyChart.destroy();
   bankMonthlyChart = new Chart(document.getElementById('bankMonthlyChart'), {
