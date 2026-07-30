@@ -157,3 +157,24 @@ def build_series(history: dict, component_key: str | None = None, regn: int | No
         prev_period_num_by_year[year] = month
 
     return out
+
+
+MONTH_NAMES_RU = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+
+
+def pivot_by_year(series: list[dict]) -> dict:
+    """
+    Разбивает плоский ряд (результат build_series) на структуру
+    "год -> 12 значений по месяцам" (месяц, которого нет в данных, = None).
+    Используется для страницы в стиле "сравнение по годам" (группировка
+    по месяцам, отдельная линия/столбец на каждый год).
+    """
+    years = sorted({p["period"][2:] for p in series})
+    monthly = {y: [None] * 12 for y in years}
+    ytd = {y: [None] * 12 for y in years}
+    for p in series:
+        year = p["period"][2:]
+        month = int(p["period"][:2])
+        monthly[year][month - 1] = p["monthly"]
+        ytd[year][month - 1] = p["ytd"]
+    return {"years": years, "monthly": monthly, "ytd": ytd}
