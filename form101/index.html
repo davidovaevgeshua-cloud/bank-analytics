@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Прибыль банковского сектора РФ — сравнение по годам</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1c2438; --border:#2a3450;
+    --text:#e7ebf3; --muted:#8a92a8; --pos:#3ddc84; --neg:#ff5c6a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:1140px;margin:0 auto;padding:32px 20px 60px;}
+  h1{font-size:22px;font-weight:600;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .card .label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .card .value{font-size:20px;font-weight:600;}
+  .card .yoy{font-size:12.5px;margin-top:4px;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:22px;}
+  h2{font-size:16px;font-weight:600;margin:0 0 14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:500;font-size:12px;}
+  td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr:hover td{background:var(--panel2);}
+  .note{font-size:13px;color:var(--muted);}
+  canvas{max-height:380px;}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;max-width:420px;}
+  .selector-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Прибыль банковского сектора РФ — сравнение по годам</h1>
+  <div class="subtitle">Форма 101 ЦБ (счёт 706). Страница обновляется автоматически по мере публикации новых данных.</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="label" id="lblMonthly">Прибыль за месяц</div>
+      <div class="value" id="cardMonthly"></div>
+      <div class="yoy" id="cardMonthlyYoy"></div>
+    </div>
+    <div class="card">
+      <div class="label" id="lblYtd">Накопленная прибыль (YTD)</div>
+      <div class="value" id="cardYtd"></div>
+      <div class="yoy" id="cardYtdYoy"></div>
+    </div>
+    <div class="card">
+      <div class="label" id="lblFullYear">Прибыль за последний полный год</div>
+      <div class="value" id="cardFullYear"></div>
+      <div class="yoy" id="cardFullYearYoy"></div>
+    </div>
+    <div class="card">
+      <div class="label">Отслеживаемых банков</div>
+      <div class="value" id="cardBankCount"></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Прибыль сектора по месяцам — сравнение по годам, млрд ₽</h2>
+    <canvas id="sectorMonthlyChart"></canvas>
+  </section>
+
+  <section>
+    <h2>Помесячные значения и динамика г/г</h2>
+    <table>
+      <thead><tr id="sectorTableHead"></tr></thead>
+      <tbody id="sectorTable"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Накопленная прибыль сектора с начала года (YTD), млрд ₽</h2>
+    <canvas id="sectorYtdChart"></canvas>
+  </section>
+
+  <section>
+    <h2>Динамика по выбранному банку — сравнение по годам</h2>
+    <div class="selector-row"><select id="bankSelect"></select></div>
+    <canvas id="bankMonthlyChart"></canvas>
+    <div style="height:22px"></div>
+    <canvas id="bankYtdChart"></canvas>
+  </section>
+
+  <section>
+    <h2>Помесячные значения по выбранному банку, млрд ₽</h2>
+    <table>
+      <thead><tr id="bankTableHead"></tr></thead>
+      <tbody id="bankTable"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+const DATA = {"month_names": ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"], "sector": {"years": ["2024", "2025", "2026"], "monthly": {"2024": [331.525, 234.42, 271.073, 274.298, 273.819, 344.772, 331.748, 431.716, 354.576, 357.682, 478.965, 206.095], "2025": [268.735, 246.46, 234.937, 295.209, 292.337, 455.876, 347.601, 309.611, 373.436, 307.842, 444.211, 183.475], "2026": [385.147, 360.743, 419.215, 339.291, 352.341, 409.742, null, null, null, null, null, null]}, "ytd": {"2024": [331.525, 565.944, 837.018, 1111.316, 1385.135, 1729.907, 2061.655, 2493.371, 2847.947, 3205.629, 3684.594, 3890.688], "2025": [268.735, 515.196, 750.133, 1045.342, 1337.679, 1793.555, 2141.156, 2450.767, 2824.203, 3132.045, 3576.256, 3759.731], "2026": [385.147, 745.89, 1165.105, 1504.397, 1856.738, 2266.48, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 409.742, "prev_monthly": 455.876, "last_ytd": 2266.48, "prev_ytd": 1793.555, "last_full_year": "2025", "last_full_val": 3759.731, "prev_full_year": "2024", "prev_full_val": 3890.688}}, "bank_order": [1481, 1000, 1326, 354, 2673, 841, 963, 2312, 3292, 3349, 1978, 3027, 3542], "banks": {"1481": {"name": "СБЕРБАНК РОССИИ", "years": ["2024", "2025", "2026"], "monthly": {"2024": [115.126, 120.399, 128.46, 131.065, 133.359, 140.332, 141.161, 142.744, 140.571, 134.233, 117.326, 117.605], "2025": [132.947, 134.391, 137.187, 137.794, 140.575, 143.689, 144.919, 148.077, 150.275, 149.619, 148.743, 125.938], "2026": [161.749, 162.803, 166.439, 166.833, 169.374, 168.067, null, null, null, null, null, null]}, "ytd": {"2024": [115.126, 235.524, 363.985, 495.05, 628.409, 768.741, 909.903, 1052.647, 1193.218, 1327.451, 1444.778, 1562.382], "2025": [132.947, 267.338, 404.524, 542.319, 682.894, 826.583, 971.502, 1119.58, 1269.855, 1419.474, 1568.217, 1694.155], "2026": [161.749, 324.551, 490.991, 657.823, 827.197, 995.264, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 168.067, "prev_monthly": 143.689, "last_ytd": 995.264, "prev_ytd": 826.583, "last_full_year": "2025", "last_full_val": 1694.155, "prev_full_year": "2024", "prev_full_val": 1562.382}}, "1000": {"name": "ВТБ", "years": ["2024", "2025", "2026"], "monthly": {"2024": [22.238, 8.563, 4.41, 8.343, 15.764, 76.326, 11.651, 38.433, 25.306, 104.115, 129.8, 165.02], "2025": [5.11, 34.5, 6.121, 27.478, 6.575, 84.928, 20.702, 25.205, 41.723, 13.113, 77.524, 22.844], "2026": [27.414, 53.674, 59.396, 34.111, 33.093, 53.083, null, null, null, null, null, null]}, "ytd": {"2024": [22.238, 30.801, 35.211, 43.554, 59.317, 135.644, 147.295, 185.728, 211.034, 315.149, 444.949, 609.969], "2025": [5.11, 39.61, 45.731, 73.208, 79.783, 164.711, 185.413, 210.618, 252.341, 265.454, 342.978, 365.822], "2026": [27.414, 81.088, 140.483, 174.594, 207.688, 260.77, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 53.083, "prev_monthly": 84.928, "last_ytd": 260.77, "prev_ytd": 164.711, "last_full_year": "2025", "last_full_val": 365.822, "prev_full_year": "2024", "prev_full_val": 609.969}}, "1326": {"name": "АЛЬФА-БАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [3.32, 2.491, 2.678, 20.679, 17.154, 24.811, 29.169, 58.111, 31.49, 2.58, 10.911, -3.791], "2025": [24.129, -7.875, 12.892, 28.312, 25.709, 55.005, 25.618, 12.11, 21.052, 24.709, 27.001, 32.932], "2026": [38.206, 23.629, 29.6, 20.148, 25.095, 37.374, null, null, null, null, null, null]}, "ytd": {"2024": [3.32, 5.811, 8.489, 29.168, 46.322, 71.134, 100.303, 158.414, 189.905, 192.485, 203.396, 199.605], "2025": [24.129, 16.254, 29.146, 57.457, 83.167, 138.172, 163.789, 175.899, 196.951, 221.66, 248.661, 281.593], "2026": [38.206, 61.836, 91.436, 111.584, 136.679, 174.053, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 37.374, "prev_monthly": 55.005, "last_ytd": 174.053, "prev_ytd": 138.172, "last_full_year": "2025", "last_full_val": 281.593, "prev_full_year": "2024", "prev_full_val": 199.605}}, "354": {"name": "ГАЗПРОМБАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [18.987, 12.755, 13.946, 11.288, 30.138, 16.335, 15.26, 47.247, 25.595, 13.275, 47.119, -42.463], "2025": [-3.823, -0.734, 6.926, 5.068, 33.71, 18.1, 13.215, 34.177, 22.436, 12.756, 16.901, -10.034], "2026": [18.338, 14.109, 26.091, 9.226, 26.109, -7.075, null, null, null, null, null, null]}, "ytd": {"2024": [18.987, 31.742, 45.689, 56.976, 87.115, 103.45, 118.71, 165.957, 191.552, 204.827, 251.945, 209.483], "2025": [-3.823, -4.556, 2.37, 7.438, 41.148, 59.249, 72.464, 106.641, 129.077, 141.833, 158.733, 148.7], "2026": [18.338, 32.448, 58.539, 67.764, 93.873, 86.798, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": -7.075, "prev_monthly": 18.1, "last_ytd": 86.798, "prev_ytd": 59.249, "last_full_year": "2025", "last_full_val": 148.7, "prev_full_year": "2024", "prev_full_val": 209.483}}, "2673": {"name": "ТБанк", "years": ["2024", "2025", "2026"], "monthly": {"2024": [5.111, 5.448, 6.781, 8.273, 1.943, 1.313, 4.371, 5.276, 4.11, 7.852, 7.285, 2.955], "2025": [0.861, 1.643, 3.923, 2.315, 0.171, 3.858, 12.776, 7.722, 14.851, 19.496, 20.289, 24.242], "2026": [19.352, 13.766, 17.277, 7.309, 15.859, 14.687, null, null, null, null, null, null]}, "ytd": {"2024": [5.111, 10.559, 17.34, 25.614, 27.557, 28.87, 33.242, 38.518, 42.627, 50.479, 57.764, 60.719], "2025": [0.861, 2.504, 6.427, 8.742, 8.913, 12.77, 25.546, 33.268, 48.119, 67.615, 87.904, 112.146], "2026": [19.352, 33.118, 50.394, 57.703, 73.562, 88.249, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 14.687, "prev_monthly": 3.858, "last_ytd": 88.249, "prev_ytd": 12.77, "last_full_year": "2025", "last_full_val": 112.146, "prev_full_year": "2024", "prev_full_val": 60.719}}, "841": {"name": "ВАЙЛДБЕРРИЗ БАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [0.099, 0.17, 0.438, 1.163, 1.498, 1.413, 2.174, 2.363, 2.156, 2.845, 2.629, 4.862], "2025": [4.801, 2.337, 3.876, 3.146, 4.986, 5.529, 4.952, 5.494, 7.001, 6.966, 6.894, 7.985], "2026": [9.297, 9.646, 15.614, 13.001, 11.591, 13.083, null, null, null, null, null, null]}, "ytd": {"2024": [0.099, 0.269, 0.707, 1.869, 3.368, 4.781, 6.955, 9.318, 11.474, 14.319, 16.948, 21.81], "2025": [4.801, 7.138, 11.013, 14.159, 19.145, 24.674, 29.625, 35.119, 42.12, 49.086, 55.98, 63.965], "2026": [9.297, 18.943, 34.557, 47.558, 59.15, 72.232, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 13.083, "prev_monthly": 5.529, "last_ytd": 72.232, "prev_ytd": 24.674, "last_full_year": "2025", "last_full_val": 63.965, "prev_full_year": "2024", "prev_full_val": 21.81}}, "963": {"name": "СОВКОМБАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [3.105, 3.334, 5.004, 1.986, 0.046, 14.365, -2.141, 5.39, 4.48, -4.206, 6.654, 4.808], "2025": [-3.462, -8.683, -4.203, 8.974, 7.603, 3.714, 2.789, 1.995, 14.262, -4.027, 11.659, 13.467], "2026": [2.604, 3.406, 9.887, 23.413, 10.226, 14.684, null, null, null, null, null, null]}, "ytd": {"2024": [3.105, 6.439, 11.442, 13.428, 13.474, 27.839, 25.698, 31.089, 35.568, 31.362, 38.016, 42.824], "2025": [-3.462, -12.144, -16.347, -7.373, 0.23, 3.944, 6.733, 8.728, 22.99, 18.963, 30.622, 44.089], "2026": [2.604, 6.01, 15.898, 39.31, 49.536, 64.22, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 14.684, "prev_monthly": 3.714, "last_ytd": 64.22, "prev_ytd": 3.944, "last_full_year": "2025", "last_full_val": 44.089, "prev_full_year": "2024", "prev_full_val": 42.824}}, "2312": {"name": "БАНК ДОМ.РФ", "years": ["2024", "2025", "2026"], "monthly": {"2024": [6.929, 4.565, 1.297, 1.437, -0.212, 3.26, 4.672, 10.383, 5.095, 3.998, 6.6, -2.21], "2025": [4.526, 4.024, 1.196, 7.674, 2.842, 10.698, 5.663, 6.671, 7.725, 5.429, 11.149, 12.687], "2026": [11.358, 10.091, 9.784, 0.843, 12.214, 11.377, null, null, null, null, null, null]}, "ytd": {"2024": [6.929, 11.494, 12.792, 14.229, 14.016, 17.277, 21.949, 32.332, 37.427, 41.425, 48.026, 45.815], "2025": [4.526, 8.55, 9.746, 17.42, 20.262, 30.96, 36.623, 43.294, 51.02, 56.449, 67.598, 80.285], "2026": [11.358, 21.449, 31.233, 32.076, 44.29, 55.667, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 11.377, "prev_monthly": 10.698, "last_ytd": 55.667, "prev_ytd": 30.96, "last_full_year": "2025", "last_full_val": 80.285, "prev_full_year": "2024", "prev_full_val": 45.815}}, "3292": {"name": "РАЙФФАЙЗЕНБАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [13.717, 9.925, 8.844, 11.865, 11.325, 15.576, 9.064, 11.525, 15.447, 13.36, 10.966, 10.873], "2025": [11.88, 8.763, -19.061, 11.212, 8.35, 62.8, 9.213, 9.277, 8.614, 7.866, 31.728, -75.405], "2026": [7.121, 7.195, 7.459, 7.694, 6.845, 7.044, null, null, null, null, null, null]}, "ytd": {"2024": [13.717, 23.642, 32.486, 44.35, 55.676, 71.252, 80.316, 91.841, 107.289, 120.648, 131.615, 142.488], "2025": [11.88, 20.643, 1.582, 12.794, 21.144, 83.943, 93.156, 102.434, 111.047, 118.914, 150.641, 75.236], "2026": [7.121, 14.316, 21.774, 29.468, 36.313, 43.358, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 7.044, "prev_monthly": 62.8, "last_ytd": 43.358, "prev_ytd": 83.943, "last_full_year": "2025", "last_full_val": 75.236, "prev_full_year": "2024", "prev_full_val": 142.488}}, "3349": {"name": "РОССЕЛЬХОЗБАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [37.618, 6.979, 6.056, 6.961, -7.91, 3.882, 6.321, -1.799, 6.754, 3.079, 5.808, -24.102], "2025": [-3.091, 15.409, 10.693, 2.054, 5.816, 1.297, 16.621, 5.238, -4.106, 7.049, 12.17, -13.784], "2026": [11.687, 4.19, 9.244, 5.94, 1.846, 1.571, null, null, null, null, null, null]}, "ytd": {"2024": [37.618, 44.596, 50.653, 57.613, 49.703, 53.585, 59.906, 58.107, 64.861, 67.94, 73.748, 49.646], "2025": [-3.091, 12.318, 23.011, 25.065, 30.881, 32.178, 48.799, 54.037, 49.93, 56.98, 69.15, 55.366], "2026": [11.687, 15.877, 25.121, 31.061, 32.907, 34.478, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 1.571, "prev_monthly": 1.297, "last_ytd": 34.478, "prev_ytd": 32.178, "last_full_year": "2025", "last_full_val": 55.366, "prev_full_year": "2024", "prev_full_val": 49.646}}, "1978": {"name": "МОСКОВСКИЙ КРЕДИТНЫЙ БАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [7.528, 2.514, 3.225, 5.063, 1.755, 1.399, 2.708, 3.269, 1.156, 2.716, 4.59, -4.072], "2025": [7.772, 0.243, -2.67, 10.292, 1.833, -0.289, 4.816, 4.489, 3.627, -1.228, 0.397, -8.216], "2026": [5.066, 5.964, 1.967, 0.853, 0.998, 0.272, null, null, null, null, null, null]}, "ytd": {"2024": [7.528, 10.041, 13.266, 18.329, 20.084, 21.483, 24.191, 27.46, 28.617, 31.332, 35.922, 31.85], "2025": [7.772, 8.015, 5.345, 15.637, 17.47, 17.181, 21.997, 26.486, 30.113, 28.885, 29.282, 21.066], "2026": [5.066, 11.03, 12.997, 13.85, 14.848, 15.12, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 0.272, "prev_monthly": -0.289, "last_ytd": 15.12, "prev_ytd": 17.181, "last_full_year": "2025", "last_full_val": 21.066, "prev_full_year": "2024", "prev_full_val": 31.85}}, "3027": {"name": "ЯНДЕКС БАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [0.048, -0.291, -0.497, -0.304, -0.25, -0.652, -0.555, 0.295, 0.289, 0.292, 0.04, -1.402], "2025": [0.421, -0.052, 0.281, 0.338, 2.199, 0.892, 1.047, -0.459, 1.569, -1.483, 0.814, 1.088], "2026": [1.381, 0.924, 1.339, 0.64, 1.762, 1.999, null, null, null, null, null, null]}, "ytd": {"2024": [0.048, -0.243, -0.74, -1.044, -1.294, -1.946, -2.501, -2.206, -1.918, -1.626, -1.585, -2.987], "2025": [0.421, 0.368, 0.649, 0.987, 3.186, 4.078, 5.126, 4.667, 6.236, 4.753, 5.568, 6.656], "2026": [1.381, 2.305, 3.644, 4.284, 6.046, 8.045, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 1.999, "prev_monthly": 0.892, "last_ytd": 8.045, "prev_ytd": 4.078, "last_full_year": "2025", "last_full_val": 6.656, "prev_full_year": "2024", "prev_full_val": -2.987}}, "3542": {"name": "ОЗОН БАНК", "years": ["2024", "2025", "2026"], "monthly": {"2024": [0.959, 1.235, 0.836, 0.6, 1.246, 1.34, -0.354, 1.782, 1.542, 1.2, 2.605, 2.333], "2025": [2.509, 2.448, 2.359, 1.186, 2.067, 2.906, 1.514, 3.078, 3.44, 1.098, 2.569, 2.906], "2026": [3.532, 2.375, 2.946, 1.9, 3.197, 4.863, null, null, null, null, null, null]}, "ytd": {"2024": [0.959, 2.194, 3.03, 3.629, 4.875, 6.216, 5.862, 7.643, 9.185, 10.385, 12.989, 15.322], "2025": [2.509, 4.957, 7.316, 8.502, 10.569, 13.475, 14.99, 18.068, 21.508, 22.605, 25.175, 28.08], "2026": [3.532, 5.907, 8.853, 10.753, 13.95, 18.813, null, null, null, null, null, null]}, "cards": {"last_year": "2026", "last_month_idx": 5, "last_month_label": "июн", "last_monthly": 4.863, "prev_monthly": 2.906, "last_ytd": 18.813, "prev_ytd": 13.475, "last_full_year": "2025", "last_full_val": 28.08, "prev_full_year": "2024", "prev_full_val": 15.322}}}};
+const YEAR_COLORS = ['#8a92a8', '#4f8cff', '#3ddc84', '#f4c15a', '#ff5c6a', '#b98af0'];
+
+function colorFor(idx){ return YEAR_COLORS[idx % YEAR_COLORS.length]; }
+function fmt(x){
+  if(x===null||x===undefined) return '—';
+  return x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function pctStr(cur, prev){
+  if(cur===null||cur===undefined||prev===null||prev===undefined||prev===0) return '—';
+  const p = (cur/prev-1)*100;
+  const sign = p>=0?'+':'';
+  return sign + p.toFixed(1) + '%';
+}
+function pctClass(cur, prev){
+  if(cur===null||cur===undefined||prev===null||prev===undefined) return '';
+  return (cur-prev)>=0 ? 'pos':'neg';
+}
+
+const commonOpts = {
+  scales: { x:{ticks:{color:'#8a92a8'},grid:{display:false}}, y:{ticks:{color:'#8a92a8'},grid:{color:'#2a3450'}} },
+  plugins: { legend:{labels:{color:'#e7ebf3'}} }
+};
+
+function setCards(c, monthlySuffix, ytdSuffix, fullSuffix){
+  document.getElementById('lblMonthly').textContent = 'Прибыль за ' + c.last_month_label + ' ' + c.last_year;
+  document.getElementById('cardMonthly').textContent = fmt(c.last_monthly) + ' млрд ₽';
+  document.getElementById('cardMonthly').className = 'value ' + pctClass(c.last_monthly, c.prev_monthly);
+  document.getElementById('cardMonthlyYoy').textContent = c.prev_monthly!==null&&c.prev_monthly!==undefined
+    ? pctStr(c.last_monthly, c.prev_monthly) + ' г/г (' + fmt(c.prev_monthly) + ' млрд ₽ год назад)' : 'нет данных за прошлый год';
+  document.getElementById('cardMonthlyYoy').className = 'yoy ' + pctClass(c.last_monthly, c.prev_monthly);
+
+  document.getElementById('lblYtd').textContent = 'YTD на ' + c.last_month_label + ' ' + c.last_year;
+  document.getElementById('cardYtd').textContent = fmt(c.last_ytd) + ' млрд ₽';
+  document.getElementById('cardYtd').className = 'value ' + pctClass(c.last_ytd, c.prev_ytd);
+  document.getElementById('cardYtdYoy').textContent = c.prev_ytd!==null&&c.prev_ytd!==undefined
+    ? pctStr(c.last_ytd, c.prev_ytd) + ' г/г (' + fmt(c.prev_ytd) + ' млрд ₽ за тот же период год назад)' : 'нет данных за прошлый год';
+  document.getElementById('cardYtdYoy').className = 'yoy ' + pctClass(c.last_ytd, c.prev_ytd);
+
+  if(c.last_full_year){
+    document.getElementById('lblFullYear').textContent = 'Прибыль за ' + c.last_full_year + ' г. целиком';
+    document.getElementById('cardFullYear').textContent = fmt(c.last_full_val) + ' млрд ₽';
+    document.getElementById('cardFullYear').className = 'value ' + pctClass(c.last_full_val, c.prev_full_val);
+    document.getElementById('cardFullYearYoy').textContent = c.prev_full_val!==null&&c.prev_full_val!==undefined
+      ? pctStr(c.last_full_val, c.prev_full_val) + ' г/г (' + fmt(c.prev_full_val) + ' млрд ₽ за ' + c.prev_full_year + ' г.)' : 'нет данных за прошлый год';
+    document.getElementById('cardFullYearYoy').className = 'yoy ' + pctClass(c.last_full_val, c.prev_full_val);
+  } else {
+    document.getElementById('lblFullYear').textContent = 'Полный год пока не завершён';
+    document.getElementById('cardFullYear').textContent = '—';
+    document.getElementById('cardFullYearYoy').textContent = '';
+  }
+}
+
+setCards(DATA.sector.cards);
+document.getElementById('cardBankCount').textContent = DATA.bank_order.length;
+
+function monthlyChartData(obj){
+  return {
+    labels: DATA.month_names,
+    datasets: obj.years.map((y,i)=>({
+      label: y, data: obj.monthly[y], backgroundColor: colorFor(i), borderRadius:4
+    }))
+  };
+}
+function ytdChartData(obj){
+  return {
+    labels: DATA.month_names,
+    datasets: obj.years.map((y,i)=>({
+      label: y + ', накоплено с начала года', data: obj.ytd[y],
+      borderColor: colorFor(i), backgroundColor: colorFor(i)+'26',
+      fill:true, tension:0.25, pointRadius:3, spanGaps:false
+    }))
+  };
+}
+function fillTable(headId, bodyId, obj){
+  const head = document.getElementById(headId);
+  head.innerHTML = '<th>Месяц</th>' + obj.years.map(y=>`<th class="num">${y}</th>`).join('')
+    + obj.years.slice(1).map((y,i)=>`<th class="num">г/г ${obj.years[i+1]}</th>`).join('');
+  const body = document.getElementById(bodyId);
+  body.innerHTML = '';
+  DATA.month_names.forEach((mn,idx)=>{
+    let row = `<td>${mn}</td>`;
+    obj.years.forEach(y=>{ row += `<td class="num">${fmt(obj.monthly[y][idx])}</td>`; });
+    obj.years.slice(1).forEach((y,i)=>{
+      const prevY = obj.years[i];
+      const cur = obj.monthly[y][idx], prev = obj.monthly[prevY][idx];
+      row += `<td class="num ${pctClass(cur,prev)}">${pctStr(cur,prev)}</td>`;
+    });
+    const tr = document.createElement('tr');
+    tr.innerHTML = row;
+    body.appendChild(tr);
+  });
+}
+
+new Chart(document.getElementById('sectorMonthlyChart'), { type:'bar', data: monthlyChartData(DATA.sector), options: commonOpts });
+new Chart(document.getElementById('sectorYtdChart'), { type:'line', data: ytdChartData(DATA.sector), options: commonOpts });
+fillTable('sectorTableHead', 'sectorTable', DATA.sector);
+
+const select = document.getElementById('bankSelect');
+DATA.bank_order.forEach(regn=>{
+  const b = DATA.banks[regn];
+  if(!b) return;
+  const opt = document.createElement('option');
+  opt.value = regn; opt.textContent = b.name;
+  select.appendChild(opt);
+});
+
+let bankMonthlyChart=null, bankYtdChart=null;
+function renderBank(regn){
+  const b = DATA.banks[regn];
+  if(!b) return;
+
+  setCards(b.cards);
+
+  if(bankMonthlyChart) bankMonthlyChart.destroy();
+  bankMonthlyChart = new Chart(document.getElementById('bankMonthlyChart'), {
+    type:'bar', data: monthlyChartData(b),
+    options: Object.assign({}, commonOpts, {plugins:{legend:{labels:{color:'#e7ebf3'}}, title:{display:true,text:'Прибыль за месяц, млрд ₽',color:'#8a92a8',font:{size:12}}}})
+  });
+  if(bankYtdChart) bankYtdChart.destroy();
+  bankYtdChart = new Chart(document.getElementById('bankYtdChart'), {
+    type:'line', data: ytdChartData(b),
+    options: Object.assign({}, commonOpts, {plugins:{legend:{labels:{color:'#e7ebf3'}}, title:{display:true,text:'Накопленная прибыль (YTD), млрд ₽',color:'#8a92a8',font:{size:12}}}})
+  });
+  fillTable('bankTableHead', 'bankTable', b);
+}
+select.addEventListener('change', e=>renderBank(e.target.value));
+if (DATA.bank_order.length) renderBank(String(DATA.bank_order[0]));
+</script>
+</body>
+</html>
