@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Аналитика банковского сектора — форма 101 / форма 102</title>
+<style>
+  :root{--bg:#0f1420;--panel:#161d2e;--panel2:#1c2438;--border:#2a3450;--text:#e7ebf3;--muted:#8a92a8;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;}
+  .topbar{
+    display:flex;align-items:center;gap:14px;padding:14px 20px;
+    background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  .topbar h1{font-size:16px;font-weight:600;margin:0;white-space:nowrap;}
+  select{
+    background:var(--panel2);color:var(--text);border:1px solid var(--border);
+    border-radius:8px;padding:8px 14px;font-size:14px;
+  }
+  .frame-wrap{height:calc(100vh - 57px);}
+  iframe{width:100%;height:100%;border:0;display:block;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>Аналитика банковского сектора РФ</h1>
+    <select id="pageSelect">
+      <option value="form101/index.html">Прибыль (форма 101)</option>
+      <option value="form102/index.html">CIR (форма 102)</option>
+    </select>
+  </div>
+
+  <div class="frame-wrap">
+    <iframe id="contentFrame" src="form102/index.html"></iframe>
+  </div>
+
+<script>
+const select = document.getElementById('pageSelect');
+const frame = document.getElementById('contentFrame');
+select.addEventListener('change', () => {
+  frame.src = select.value;
+});
+</script>
+</body>
+</html>
