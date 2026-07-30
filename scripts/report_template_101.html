@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Прибыль банковского сектора РФ (форма 101 ЦБ)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0f1420;--panel:#161d2e;--panel2:#1c2438;--border:#2a3450;--text:#e7ebf3;--muted:#8a92a8;--pos:#3ddc84;--neg:#ff5c6a;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:1140px;margin:0 auto;padding:32px 20px 60px;}
+  h1{font-size:22px;font-weight:600;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .card .label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .card .value{font-size:20px;font-weight:600;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:22px;}
+  h2{font-size:16px;font-weight:600;margin:0 0 14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:500;font-size:12px;}
+  td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr:hover td{background:var(--panel2);}
+  .note{font-size:13px;color:var(--muted);}
+  canvas{max-height:380px;}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;max-width:420px;}
+  .selector-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Прибыль банковского сектора РФ</h1>
+  <div class="subtitle">Форма 101 ЦБ (счёт 706 «Финансовый результат текущего года»). Страница обновляется автоматически по мере публикации новых данных ЦБ.</div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Последний период</div><div class="value" id="cardPeriod"></div></div>
+    <div class="card"><div class="label">Прибыль сектора за месяц</div><div class="value pos" id="cardMonthly"></div></div>
+    <div class="card"><div class="label">Прибыль сектора, YTD</div><div class="value pos" id="cardYtd"></div></div>
+  </div>
+
+  <section>
+    <h2>Прибыль сектора по месяцам, млрд ₽</h2>
+    <canvas id="sectorMonthlyChart"></canvas>
+  </section>
+
+  <section>
+    <h2>Накопленная прибыль сектора с начала года (YTD), млрд ₽</h2>
+    <canvas id="sectorYtdChart"></canvas>
+  </section>
+
+  <section>
+    <h2>Динамика по выбранному банку</h2>
+    <div class="selector-row"><select id="bankSelect"></select></div>
+    <canvas id="bankChart"></canvas>
+    <table style="margin-top:14px">
+      <thead><tr><th>Месяц</th><th class="num">Прибыль за месяц, млрд ₽</th><th class="num">YTD, млрд ₽</th></tr></thead>
+      <tbody id="bankTable"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+const DATA = __PROFIT_DATA_JSON__;
+
+function fmt(x){ if(x===null||x===undefined) return '—'; return x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+
+const commonOpts = {
+  scales: { x:{ticks:{color:'#8a92a8'},grid:{display:false}}, y:{ticks:{color:'#8a92a8'},grid:{color:'#2a3450'}} },
+  plugins: { legend:{labels:{color:'#e7ebf3'}} }
+};
+
+const sector = DATA.sector;
+const last = sector[sector.length-1];
+document.getElementById('cardPeriod').textContent = last ? last.label : '—';
+document.getElementById('cardMonthly').textContent = last ? fmt(last.monthly)+' млрд ₽' : '—';
+document.getElementById('cardYtd').textContent = last ? fmt(last.ytd)+' млрд ₽' : '—';
+
+new Chart(document.getElementById('sectorMonthlyChart'), {
+  type:'bar',
+  data:{
+    labels: sector.map(r=>r.label),
+    datasets:[{label:'Прибыль за месяц, млрд ₽', data: sector.map(r=>r.monthly),
+      backgroundColor: sector.map(r=>(r.monthly===null?'#2a3450':(r.monthly>=0?'#4f8cff':'#ff5c6a'))), borderRadius:4}]
+  },
+  options: commonOpts
+});
+
+new Chart(document.getElementById('sectorYtdChart'), {
+  type:'line',
+  data:{
+    labels: sector.map(r=>r.label),
+    datasets:[{label:'Накопленная прибыль (YTD), млрд ₽', data: sector.map(r=>r.ytd),
+      borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', fill:true, tension:0.2, pointRadius:2, spanGaps:false}]
+  },
+  options: commonOpts
+});
+
+const select = document.getElementById('bankSelect');
+DATA.bank_order.forEach(regn=>{
+  const b = DATA.banks[regn];
+  if(!b) return;
+  const opt = document.createElement('option');
+  opt.value = regn; opt.textContent = b.name;
+  select.appendChild(opt);
+});
+
+let bankChart=null;
+function renderBank(regn){
+  const b = DATA.banks[regn];
+  if(!b) return;
+  if(bankChart) bankChart.destroy();
+  bankChart = new Chart(document.getElementById('bankChart'), {
+    data:{
+      labels: b.series.map(r=>r.label),
+      datasets:[
+        {type:'bar', label:'Прибыль за месяц, млрд ₽', data: b.series.map(r=>r.monthly),
+          backgroundColor: b.series.map(r=>(r.monthly===null?'#2a3450':(r.monthly>=0?'#4f8cff':'#ff5c6a'))), borderRadius:4, order:2},
+        {type:'line', label:'YTD, млрд ₽', data: b.series.map(r=>r.ytd), yAxisID:'y1',
+          borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', tension:0.2, pointRadius:2, spanGaps:false, order:1},
+      ]
+    },
+    options: {
+      scales: {
+        x:{ticks:{color:'#8a92a8'},grid:{display:false}},
+        y:{position:'left', ticks:{color:'#8a92a8'}, grid:{color:'#2a3450'}, title:{display:true,text:'За месяц',color:'#8a92a8'}},
+        y1:{position:'right', ticks:{color:'#8a92a8'}, grid:{display:false}, title:{display:true,text:'YTD',color:'#8a92a8'}},
+      },
+      plugins: { legend:{labels:{color:'#e7ebf3'}} }
+    }
+  });
+  const tbody = document.getElementById('bankTable');
+  tbody.innerHTML='';
+  b.series.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.label}</td><td class="num">${fmt(r.monthly)}</td><td class="num">${fmt(r.ytd)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+select.addEventListener('change', e=>renderBank(e.target.value));
+if (DATA.bank_order.length) renderBank(String(DATA.bank_order[0]));
+</script>
+</body>
+</html>
