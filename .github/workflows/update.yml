@@ -1,4 +1,4 @@
-name: Обновление данных (CIR + капитал/нормативы)
+name: Обновление данных (CIR + кредитный портфель ЮЛ/ФЛ)
 
 on:
   schedule:
@@ -21,22 +21,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Установка зависимостей (dbfread, unrar)
+      - name: Установка зависимостей (dbfread, openpyxl, unrar)
         run: |
-          pip install dbfread
+          pip install dbfread openpyxl
           sudo apt-get update
           sudo apt-get install -y unrar || sudo apt-get install -y unrar-free
 
       - name: Обновление CIR (форма 102)
         run: python scripts/update_data.py
 
-      - name: Обновление капитала/нормативов/структуры баланса (формы 101, 123, 135)
-        run: python scripts/update_capital_data.py
+      - name: Обновление кредитного портфеля ЮЛ/ФЛ (вкладка "Капитал")
+        run: python scripts/update_loans_flul.py
 
       - name: Коммит и пуш изменений (если есть)
         run: |
           git config user.name "bank-analytics-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/ index.html
-          git diff --cached --quiet && echo "Изменений нет" || git commit -m "Автообновление данных (CIR + капитал)"
+          git add data/ form102/index.html form_capital/index.html
+          git diff --cached --quiet && echo "Изменений нет" || git commit -m "Автообновление данных (CIR + кредитный портфель ЮЛ/ФЛ)"
           git push
