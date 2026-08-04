@@ -1,4 +1,4 @@
-name: Обновление данных CIR
+name: Обновление данных (CIR + капитал/нормативы)
 
 on:
   schedule:
@@ -27,13 +27,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y unrar || sudo apt-get install -y unrar-free
 
-      - name: Запуск обновления
+      - name: Обновление CIR (форма 102)
         run: python scripts/update_data.py
+
+      - name: Обновление капитала/нормативов/структуры баланса (формы 101, 123, 135)
+        run: python scripts/update_capital_data.py
 
       - name: Коммит и пуш изменений (если есть)
         run: |
-          git config user.name "cir-update-bot"
+          git config user.name "bank-analytics-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/ index.html
-          git diff --cached --quiet && echo "Изменений нет" || git commit -m "Автообновление данных CIR"
+          git diff --cached --quiet && echo "Изменений нет" || git commit -m "Автообновление данных (CIR + капитал)"
           git push
