@@ -2,81 +2,228 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Расходы банковского сектора (102 форма ЦБ)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<title>Банковский сектор РФ: аналитика ЦБ РФ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <style>
-  :root{--bg:#0f1420;--panel:#161d2e;--panel2:#1c2438;--border:#2a3450;--text:#e7ebf3;--muted:#8a92a8;--pos:#3ddc84;--neg:#ff5c6a;--accent:#4f8cff;}
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1c2438; --border:#2a3450;
+    --text:#e7ebf3; --muted:#8a92a8; --accent:#4f8cff;
+    --green:#3fbf7f; --red:#e2604f; --pos:#3fbf7f; --neg:#e2604f;
+  }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;line-height:1.5;}
-  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 70px;}
-  h1{font-size:23px;font-weight:600;margin:0 0 4px;}
-  .subtitle{color:var(--muted);font-size:13.5px;margin-bottom:30px;}
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
-  .card .label{font-size:12px;color:var(--muted);margin-bottom:8px;}
-  .card .value{font-size:20px;font-weight:600;}
-  .pos{color:var(--pos);} .neg{color:var(--neg);}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;line-height:1.5;padding:24px 32px 60px;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  h1{font-size:22px;font-weight:600;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:22px;}
+  h2{font-size:14px;font-weight:600;margin:30px 0 12px;color:var(--text);border-left:3px solid var(--accent);padding-left:10px;}
+
+  /* --- верхние вкладки: CIR / Капитал --- */
+  .toplevel-nav{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);}
+  .toplevel-tab{padding:11px 20px;cursor:pointer;color:var(--muted);font-size:14.5px;font-weight:500;border-bottom:2px solid transparent;user-select:none;}
+  .toplevel-tab.active{color:var(--text);border-bottom:2px solid var(--accent);}
+  .toplevel-panel{display:none;}
+  .toplevel-panel.active{display:block;}
+
+  /* --- вложенные вкладки внутри "Капитал" (сектор / по банку) --- */
+  .tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .tab{padding:10px 18px;cursor:pointer;color:var(--muted);font-size:14px;border-bottom:2px solid transparent;user-select:none;}
+  .tab.active{color:var(--text);border-bottom:2px solid var(--accent);}
+  .view{display:none;}
+  .view.active{display:block;}
+
   section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:22px 24px;margin-bottom:24px;}
   section > .sec-num{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
-  h2{font-size:16.5px;font-weight:600;margin:0 0 16px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .panel h3{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text);}
+  .panel .note{font-size:11px;color:var(--muted);margin-top:6px;}
+  canvas{max-height:300px;}
+
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
   th{color:var(--muted);font-weight:500;font-size:12px;}
   td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;}
   tr:hover td{background:var(--panel2);}
+  tr.highlight td{background:rgba(79,140,255,.09);}
+  .pos{color:var(--pos);} .neg{color:var(--neg);}
+
   .note{font-size:13px;color:var(--muted);}
   .note b{color:var(--text);}
   .commentary{background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;padding:14px 16px;margin-top:16px;font-size:13.5px;}
   .commentary b{color:var(--text);}
-  canvas{max-height:380px;}
+
   select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;max-width:420px;}
   .selector-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
   .legend-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:10px;background:rgba(79,140,255,.15);color:var(--accent);margin-left:4px;}
+
+  .footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px;line-height:1.6;}
+  .footer b{color:var(--text);}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>Расходы банковского сектора (102 форма ЦБ)</h1>
-  <div class="subtitle">CIR (Cost-to-Income Ratio) = АХР, символ 48000 / (чистый процентный доход + чистый комиссионный доход).<br>Чистый процентный доход = симв. 11000 − 31000. Чистый комиссионный доход = (12000+27000) − (32000+33000). Обновление на 24.07.2026, ряд январь 2025 – май 2026 (сектор — по март 2026).</div>
+  <h1>Банковский сектор РФ: аналитика ЦБ РФ</h1>
+  <div class="subtitle">Данные ЦБ РФ, формы 0409101, 0409102, 0409123, 0409135.</div>
 
-  <!-- ============ SECTION 2: SECTOR QUARTERLY (ISOLATED) ============ -->
-  <section>
-    <div class="sec-num">Раздел 1</div>
-    <h2>CIR сектора, по кварталам, %</h2>
-    <canvas id="sectorQChart"></canvas>
-    <table style="margin-top:14px">
-      <thead><tr><th>Квартал</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
-      <tbody id="sectorQTable"></tbody>
-    </table>
-    <div class="commentary" id="sectorCommentary"></div>
-  </section>
+  <div class="toplevel-nav">
+    <div class="toplevel-tab active" data-target="tab-cir">Расходы сектора (CIR)</div>
+    <div class="toplevel-tab" data-target="tab-capital">Капитал, ROE / ROA, структура баланса</div>
+  </div>
 
-  <!-- ============ SECTION 3: SINGLE BANK MONTHLY (ISOLATED) ============ -->
-  <section>
-    <div class="sec-num">Раздел 2</div>
-    <h2>CIR по выбранному банку, по месяцам, %</h2>
-    <div class="selector-row"><select id="bankSelect"></select></div>
-    <canvas id="bankCirChart"></canvas>
-    <table style="margin-top:14px">
-      <thead><tr><th>Месяц</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
-      <tbody id="bankCirTable"></tbody>
-    </table>
-    <div class="commentary" id="bankCommentary"></div>
-  </section>
+  <!-- ======================= ВКЛАДКА 1: CIR ======================= -->
+  <div id="tab-cir" class="toplevel-panel active">
+    <div class="note" style="margin-bottom:18px;">CIR (Cost-to-Income Ratio) = АХР, символ 48000 / (чистый процентный доход + чистый комиссионный доход). Чистый процентный доход = симв. 11000 &minus; 31000. Чистый комиссионный доход = (12000+27000) &minus; (32000+33000).</div>
 
-  <!-- ============ SECTION 4: MULTI-BANK CUMULATIVE ============ -->
-  <section>
-    <div class="sec-num">Раздел 3</div>
-    <h2>CIR по банкам, помесячно (нарастающим итогом с начала года)</h2>
-    <canvas id="multiBankChart" style="max-height:440px"></canvas>
-    <div class="legend-hint">Клик по имени банка в подписи внизу — скрыть/показать линию. Наведение курсора прямо на линию также показывает, какому банку она принадлежит.</div>
-  </section>
+    <section>
+      <div class="sec-num">Раздел 1</div>
+      <h2 style="border:none;padding:0;margin:0 0 16px;">CIR сектора, по кварталам, %</h2>
+      <canvas id="sectorQChart"></canvas>
+      <table style="margin-top:14px">
+        <thead><tr><th>Квартал</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
+        <tbody id="sectorQTable"></tbody>
+      </table>
+      <div class="commentary" id="sectorCommentary"></div>
+    </section>
+
+    <section>
+      <div class="sec-num">Раздел 2</div>
+      <h2 style="border:none;padding:0;margin:0 0 16px;">CIR по выбранному банку, по месяцам, %</h2>
+      <div class="selector-row"><select id="cirBankSelect"></select></div>
+      <canvas id="bankCirChart"></canvas>
+      <table style="margin-top:14px">
+        <thead><tr><th>Месяц</th><th class="num">ЧПД, млрд ₽</th><th class="num">Чистые комиссии, млрд ₽</th><th class="num">АХР, млрд ₽</th><th class="num">CIR, %</th></tr></thead>
+        <tbody id="bankCirTable"></tbody>
+      </table>
+      <div class="commentary" id="bankCommentary"></div>
+    </section>
+
+    <section>
+      <div class="sec-num">Раздел 3</div>
+      <h2 style="border:none;padding:0;margin:0 0 16px;">CIR по банкам, помесячно (нарастающим итогом с начала года)</h2>
+      <canvas id="multiBankChart" style="max-height:440px"></canvas>
+      <div class="legend-hint">Клик по имени банка в подписи внизу — скрыть/показать линию. Наведение курсора прямо на линию также показывает, какому банку она принадлежит.</div>
+    </section>
+  </div>
+
+  <!-- ==================== ВКЛАДКА 2: КАПИТАЛ ==================== -->
+  <div id="tab-capital" class="toplevel-panel">
+    <div class="note" style="margin-bottom:18px;">Капитал &mdash; форма 0409123 (код 000). Норматив Н1.0 &mdash; форма 0409135. Прибыль &mdash; форма 0409102 (символ 61101 минус 61102), нарастающим итогом с начала года.</div>
+
+    <div class="tabs">
+      <div class="tab active" data-view="sector">Банковский сектор в целом</div>
+      <div class="tab" data-view="banks">По банку (топ-10 + Озон Банк, ВБ Банк, Яндекс Банк)</div>
+    </div>
+
+    <div id="view-sector" class="view active">
+      
+  <h2>Капитал, нормативы, рентабельность</h2>
+  <div class="grid">
+    <div class="panel"><h3>Капитал, трлн руб.</h3><canvas id="sectorCapital"></canvas></div>
+    <div class="panel"><h3>Норматив достаточности капитала Н1.0, %</h3><canvas id="sectorN1"></canvas>
+      <div class="note">Мин. требование ЦБ РФ по Н1.0 &mdash; 8% (для СЗКО &mdash; выше, с учётом надбавок).</div></div>
+  </div>
+  <div class="grid">
+    <div class="panel"><h3>ROA, % годовых</h3><canvas id="sectorRoa"></canvas></div>
+    <div class="panel"><h3>ROE, % годовых</h3><canvas id="sectorRoe"></canvas></div>
+  </div>
+
+  <h2>Активы</h2>
+  <div class="grid">
+    <div class="panel"><h3>Активы по категориям, млрд руб.</h3><canvas id="sectorAssetsCat"></canvas></div>
+    <div class="panel"><h3>Динамика активов, % (г/г и с начала года)</h3><canvas id="sectorAssetsGrowth"></canvas></div>
+  </div>
+
+  <h2>Пассивы</h2>
+  <div class="grid">
+    <div class="panel"><h3>Пассивы по категориям, млрд руб.</h3><canvas id="sectorLiabCat"></canvas></div>
+    <div class="panel"><h3>Динамика пассивов, % (г/г и с начала года)</h3><canvas id="sectorLiabGrowth"></canvas></div>
+  </div>
+
+  <h2>Структура баланса</h2>
+  <div class="grid">
+    <div class="panel"><h3>Структура активов, %</h3><canvas id="sectorAssetsStruct"></canvas></div>
+    <div class="panel"><h3>Структура пассивов, %</h3><canvas id="sectorLiabStruct"></canvas></div>
+  </div>
+
+  <h2>Кредитный портфель</h2>
+  <div class="grid">
+    <div class="panel"><h3>Кредитный портфель по типу заёмщика, млрд руб.</h3><canvas id="sectorCreditCat"></canvas></div>
+    <div class="panel"><h3>Динамика кредитного портфеля, % (г/г и с начала года)</h3><canvas id="sectorCreditGrowth"></canvas></div>
+  </div>
+
+    </div>
+
+    <div id="view-banks" class="view">
+      <div class="selector-row">
+        <label for="capitalBankSelect" style="color:var(--muted);font-size:13px;">Банк:</label>
+        <select id="capitalBankSelect"></select>
+        <span class="badge" id="bankRankBadge"></span>
+      </div>
+      
+  <h2>Капитал, нормативы, рентабельность</h2>
+  <div class="grid">
+    <div class="panel"><h3>Капитал, трлн руб.</h3><canvas id="bankCapital"></canvas></div>
+    <div class="panel"><h3>Норматив достаточности капитала Н1.0, %</h3><canvas id="bankN1"></canvas>
+      <div class="note">Мин. требование ЦБ РФ по Н1.0 &mdash; 8% (для СЗКО &mdash; выше, с учётом надбавок).</div></div>
+  </div>
+  <div class="grid">
+    <div class="panel"><h3>ROA, % годовых</h3><canvas id="bankRoa"></canvas></div>
+    <div class="panel"><h3>ROE, % годовых</h3><canvas id="bankRoe"></canvas></div>
+  </div>
+
+  <h2>Активы</h2>
+  <div class="grid">
+    <div class="panel"><h3>Активы по категориям, млрд руб.</h3><canvas id="bankAssetsCat"></canvas></div>
+    <div class="panel"><h3>Динамика активов, % (г/г и с начала года)</h3><canvas id="bankAssetsGrowth"></canvas></div>
+  </div>
+
+  <h2>Пассивы</h2>
+  <div class="grid">
+    <div class="panel"><h3>Пассивы по категориям, млрд руб.</h3><canvas id="bankLiabCat"></canvas></div>
+    <div class="panel"><h3>Динамика пассивов, % (г/г и с начала года)</h3><canvas id="bankLiabGrowth"></canvas></div>
+  </div>
+
+  <h2>Структура баланса</h2>
+  <div class="grid">
+    <div class="panel"><h3>Структура активов, %</h3><canvas id="bankAssetsStruct"></canvas></div>
+    <div class="panel"><h3>Структура пассивов, %</h3><canvas id="bankLiabStruct"></canvas></div>
+  </div>
+
+  <h2>Кредитный портфель</h2>
+  <div class="grid">
+    <div class="panel"><h3>Кредитный портфель по типу заёмщика, млрд руб.</h3><canvas id="bankCreditCat"></canvas></div>
+    <div class="panel"><h3>Динамика кредитного портфеля, % (г/г и с начала года)</h3><canvas id="bankCreditGrowth"></canvas></div>
+  </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <h3>Сводная таблица &mdash; все банки, последний период (__LAST_PERIOD__)</h3>
+        <table id="summaryTable">
+          <thead><tr><th>Банк</th><th>Активы, млрд&nbsp;руб.</th><th>Капитал, млрд&nbsp;руб.</th><th>Н1.0, %</th><th>ROE мес., %</th><th>ROE YTD, %</th><th>ROA мес., %</th><th>ROA YTD, %</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      <b>Источники и методология.</b> Капитал &mdash; форма 0409123 (код 000). Нормативы Н1.0 &mdash; форма 0409135, фактическое значение банка. Чистая прибыль &mdash; форма 0409102 (символ 61101 минус 61102), нарастающим итогом с начала года.<br>
+      <b>Н1.0 по сектору/выбранному банку в разделе &laquo;сектор в целом&raquo;</b> &mdash; агрегированный показатель = сумма капитала всех банков &divide; сумма активов, взвешенных по риску (RWA). Готового RWA в данных нет, поэтому он выводится из отчётности каждого банка: RWA = Капитал / (Н1.0 / 100). Первая версия дашборда считала это как простое средневзвешенное по активам самих коэффициентов Н1.0 банков &mdash; это методологически неверно (давало завышение до ~16%) и было исправлено; текущий расчёт даёт значения, близкие к независимым оценкам.<br>
+      <b>ROE/ROA &laquo;за месяц&raquo;</b> &mdash; аннуализированная прибыль за отдельный отчётный период (месяц, для 2024&nbsp;г. местами квартал &mdash; чаще данных не было) &divide; капитал / активы на конец периода. <b>ROE/ROA YTD</b> &mdash; аннуализированная прибыль нарастающим итогом с начала года &divide; средний капитал / активы за прошедшие с начала года периоды (более сглаженный показатель).<br>
+      <b>Активы</b> получены из формы 0409101 суммированием остатков по активным счетам первого порядка за вычетом счетов 303 и 706&ndash;708 (технические счета внутреннего клиринга и результата) &mdash; расчёт даёт ~90% точности против официальных цифр по РСБУ, проверено на Сбербанке и ВТБ. <b>Пассивы</b> &mdash; аналогично по пассивным счетам, за вычетом счетов капитала (102, 105&ndash;109, 111, 114) и тех же технических счетов.<br>
+      <b>Разбивка по категориям</b> &mdash; собственная классификация счетов первого порядка по Плану счетов (Положение №579-П), сверена по контрольным суммам (сумма категорий = проверенный итог активов/пассивов). Категории активов: &laquo;Деньги и ликвидные активы&raquo;, &laquo;Счета в ЦБ РФ&raquo;, &laquo;Кредиты банкам&raquo;, &laquo;Кредитный портфель&raquo;, &laquo;Облигации&raquo;, &laquo;Акции&raquo;, &laquo;Основные средства и НМА&raquo;, &laquo;Прочие активы&raquo;. Пассивы: &laquo;Средства клиентов&raquo;, &laquo;Средства банков&raquo;, &laquo;Кредиты от ЦБ РФ&raquo;, &laquo;Субординированные&raquo;, &laquo;Ценные бумаги&raquo; (выпущенные), &laquo;Прочие обязательства&raquo;.<br>
+      <b>Кредитный портфель по типу заёмщика.</b> Важное ограничение источника: счета 452 (кредиты юрлицам) и 455 (кредиты физлицам) в публичном датасете ЦБ РФ (форма 101) у 274 из 353 банков (включая Сбербанк и ВТБ) раскрываются объединённым блоком без разбивки по типу заёмщика. Поэтому категория &laquo;Юрлица + Физлица&raquo; показана одним блоком; отдельно раскрыты только ИП (счёт 454), гос. структуры (441&ndash;449, 460&ndash;469) и просроченная задолженность (458, 459).<br>
+      <b>Список банков</b> &mdash; топ-10 по расчётной величине активов + Озон Банк, ВБ Банк (Wildberries), Яндекс Банк, единый со списком раздела CIR выше.
+    </div>
+  </div>
 
 </div>
 
 <script>
-const DATA = __PAYLOAD_JSON__;
+/* ======================================================================
+   ВКЛАДКА 1: CIR — данные и логика
+   ====================================================================== */
+const CIR_DATA = __CIR_PAYLOAD_JSON__;
 
 function fmt1(x){ if(x===null||x===undefined) return '—'; return x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}); }
 function fmtSigned(x){ if(x===null||x===undefined) return '—'; const s = x>0?'+':''; return s+x.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1}); }
@@ -86,25 +233,24 @@ const gridOpts = {
   plugins: { legend:{labels:{color:'#e7ebf3'}} }
 };
 
-/* ---------------- SECTION 1: sector quarterly isolated ---------------- */
+/* ---------------- Раздел 1: сектор по кварталам ---------------- */
 new Chart(document.getElementById('sectorQChart'), {
   type:'line',
-  data:{ labels: DATA.sector_iso.map(q=>q.label),
-    datasets:[{ label:'CIR, %', data: DATA.sector_iso.map(q=>q.cir),
+  data:{ labels: CIR_DATA.sector_iso.map(q=>q.label),
+    datasets:[{ label:'CIR, %', data: CIR_DATA.sector_iso.map(q=>q.cir),
       borderColor:'#4f8cff', backgroundColor:'rgba(79,140,255,0.12)', fill:true, tension:0.2, pointRadius:4 }]},
   options: gridOpts
 });
 const qTbody = document.getElementById('sectorQTable');
-DATA.sector_iso.forEach(q=>{
+CIR_DATA.sector_iso.forEach(q=>{
   const tr = document.createElement('tr');
   tr.innerHTML = `<td>${q.label}</td><td class="num">${fmt1(q.chpd)}</td><td class="num">${fmt1(q.comm_net)}</td><td class="num">${fmt1(q.opex)}</td><td class="num">${fmt1(q.cir)}</td>`;
   qTbody.appendChild(tr);
 });
 
-// sector commentary: last quarter vs previous quarter
 (function(){
-  const last = DATA.sector_iso[DATA.sector_iso.length-1];
-  const prev = DATA.sector_iso[DATA.sector_iso.length-2];
+  const last = CIR_DATA.sector_iso[CIR_DATA.sector_iso.length-1];
+  const prev = CIR_DATA.sector_iso[CIR_DATA.sector_iso.length-2];
   const incLast = last.chpd + last.comm_net, incPrev = prev.chpd + prev.comm_net;
   const incGrowth = (incLast-incPrev)/Math.abs(incPrev)*100;
   const opexGrowth = (last.opex-prev.opex)/Math.abs(prev.opex)*100;
@@ -126,19 +272,19 @@ DATA.sector_iso.forEach(q=>{
     `<b>${last.label}:</b> CIR сектора ${dir} до ${fmt1(last.cir)}% с ${fmt1(prev.cir)}% в ${prev.label} (${fmtSigned(cirDelta)} п.п.) — ${driver}.`;
 })();
 
-/* ---------------- SECTION 3: single bank monthly isolated ---------------- */
-const select = document.getElementById('bankSelect');
-DATA.bank_order.forEach(regn=>{
+/* ---------------- Раздел 2: по выбранному банку ---------------- */
+const cirSelect = document.getElementById('cirBankSelect');
+CIR_DATA.bank_order.forEach(regn=>{
   const opt = document.createElement('option');
-  opt.value = regn; opt.textContent = DATA.names[regn];
-  select.appendChild(opt);
+  opt.value = regn; opt.textContent = CIR_DATA.names[regn];
+  cirSelect.appendChild(opt);
 });
 
 let bankChart = null;
 function renderBank(regn){
-  const iso = DATA.iso[regn];
-  const months = DATA.all_months;
-  const labels = DATA.month_labels;
+  const iso = CIR_DATA.iso[regn];
+  const months = CIR_DATA.all_months;
+  const labels = CIR_DATA.month_labels;
   if (bankChart) bankChart.destroy();
   bankChart = new Chart(document.getElementById('bankCirChart'), {
     type:'line',
@@ -146,16 +292,15 @@ function renderBank(regn){
       borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', fill:true, tension:0.2, pointRadius:4, spanGaps:false }]},
     options: gridOpts
   });
-  const tbody = document.getElementById('bankCirTable');
-  tbody.innerHTML = '';
+  const cirTbody = document.getElementById('bankCirTable');
+  cirTbody.innerHTML = '';
   months.forEach((m,i)=>{
     const v = iso[m];
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${labels[i]}</td><td class="num">${v?fmt1(v.chpd):'—'}</td><td class="num">${v?fmt1(v.comm_net):'—'}</td><td class="num">${v?fmt1(v.opex):'—'}</td><td class="num">${v?fmt1(v.cir):'—'}</td>`;
-    tbody.appendChild(tr);
+    cirTbody.appendChild(tr);
   });
 
-  // commentary: last two available isolated months
   const avail = months.filter(m => iso[m] !== null);
   const commentaryEl = document.getElementById('bankCommentary');
   if (avail.length < 2) {
@@ -182,21 +327,21 @@ function renderBank(regn){
       ? `в первую очередь из-за роста расходов (АХР ${fmtSigned(opexGrowth)}%), опередившего рост доходов (${fmtSigned(incGrowth)}%)`
       : `из-за снижения доходов (${fmtSigned(incGrowth)}%), опередившего динамику расходов (АХР ${fmtSigned(opexGrowth)}%)`;
   }
-  commentaryEl.innerHTML = `<b>${DATA.names[regn]}, ${lastLabel}:</b> CIR ${dir} до ${fmt1(last.cir)}% с ${fmt1(prev.cir)}% в ${prevLabel} (${fmtSigned(cirDelta)} п.п.) — ${driver}.`;
+  commentaryEl.innerHTML = `<b>${CIR_DATA.names[regn]}, ${lastLabel}:</b> CIR ${dir} до ${fmt1(last.cir)}% с ${fmt1(prev.cir)}% в ${prevLabel} (${fmtSigned(cirDelta)} п.п.) — ${driver}.`;
 }
-select.addEventListener('change', e => renderBank(e.target.value));
-renderBank(String(DATA.bank_order[0]));
+cirSelect.addEventListener('change', e => renderBank(e.target.value));
+renderBank(String(CIR_DATA.bank_order[0]));
 
-/* ---------------- SECTION 4: multi-bank cumulative ---------------- */
-const palette = ['#4f8cff','#ff5c6a','#3ddc84','#f2b134','#9b6bd6','#3ec6e0','#e0793f','#7cc47f','#c94f7c','#6f8fb0','#d4a24c','#5ba3a3','#e78ac3'];
+/* ---------------- Раздел 3: все банки, нарастающим итогом ---------------- */
+const cirPalette = ['#4f8cff','#ff5c6a','#3ddc84','#f2b134','#9b6bd6','#3ec6e0','#e0793f','#7cc47f','#c94f7c','#6f8fb0','#d4a24c','#5ba3a3','#e78ac3'];
 new Chart(document.getElementById('multiBankChart'), {
   type:'line',
   data:{
-    labels: DATA.month_labels,
-    datasets: DATA.bank_order.map((regn,i) => ({
-      label: DATA.names[regn],
-      data: DATA.all_months.map(m => DATA.cum[regn][m] ? DATA.cum[regn][m].cir : null),
-      borderColor: palette[i % palette.length],
+    labels: CIR_DATA.month_labels,
+    datasets: CIR_DATA.bank_order.map((regn,i) => ({
+      label: CIR_DATA.names[regn],
+      data: CIR_DATA.all_months.map(m => CIR_DATA.cum[regn][m] ? CIR_DATA.cum[regn][m].cir : null),
+      borderColor: cirPalette[i % cirPalette.length],
       backgroundColor: 'transparent',
       borderWidth: 2,
       pointRadius: 0,
@@ -221,6 +366,176 @@ new Chart(document.getElementById('multiBankChart'), {
       x: { ticks:{ color:'#8a92a8' }, grid:{ display:false } }
     }
   }
+});
+
+/* ======================================================================
+   ВКЛАДКА 2: КАПИТАЛ — данные и логика
+   ====================================================================== */
+const CAPITAL_DATA = __CAPITAL_PAYLOAD_JSON__;
+const periods = CAPITAL_DATA.periods;
+
+const ASSET_LABELS = {
+  cash_liquid: "Деньги и ликвидные активы", cbr_accounts: "Счета в ЦБ РФ",
+  interbank_loans: "Кредиты банкам", credit_portfolio: "Кредитный портфель",
+  bonds: "Облигации", shares: "Акции", fixed_assets: "Основные средства и НМА",
+  other_assets: "Прочие активы"
+};
+const ASSET_COLORS = { cash_liquid:"#4f8ef7", cbr_accounts:"#7fd8ff", interbank_loans:"#f2b84b",
+  credit_portfolio:"#3fbf7f", bonds:"#a97cf0", shares:"#e685c9", fixed_assets:"#6ba3ff", other_assets:"#93a3b4" };
+
+const LIAB_LABELS = {
+  client_funds: "Средства клиентов", bank_funds: "Средства банков",
+  cbr_loans: "Кредиты от ЦБ РФ", subordinated: "Субординированные",
+  issued_securities: "Ценные бумаги", other_liabilities: "Прочие обязательства"
+};
+const LIAB_COLORS = { client_funds:"#f2b84b", bank_funds:"#3fbf7f", cbr_loans:"#4f8ef7",
+  subordinated:"#a97cf0", issued_securities:"#7fd8ff", other_liabilities:"#93a3b4" };
+
+const CREDIT_LABELS = { gov: "Гос структуры", ip: "ИП", overdue: "Просроченная задолженность", corp_retail: "Юрлица + Физлица" };
+const CREDIT_COLORS = { gov:"#f2b84b", ip:"#e685c9", overdue:"#e2604f", corp_retail:"#3fbf7f" };
+
+Chart.defaults.color = "#8a92a8";
+Chart.defaults.borderColor = "#2a3450";
+Chart.defaults.font.size = 11;
+
+function baseOpts(extra) {
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 8, font: {size:10} } } },
+    scales: { x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } } }
+  }, extra || {});
+}
+
+function stackedBarDatasets(ts, field, labels, colors) {
+  return Object.keys(labels).map(k => ({
+    label: labels[k], data: ts[field][k], backgroundColor: colors[k], stack: "s"
+  }));
+}
+function structureDatasets(ts, field, labels, colors) {
+  const keys = Object.keys(labels);
+  const totals = periods.map((_, i) => keys.reduce((s,k)=> s + (ts[field][k][i]||0), 0));
+  return keys.map(k => ({
+    label: labels[k],
+    data: ts[field][k].map((v,i) => (v!=null && totals[i]) ? v/totals[i]*100 : null),
+    backgroundColor: colors[k], borderColor: colors[k], fill: true, tension: .2, pointRadius: 0
+  }));
+}
+
+const capitalCharts = {};
+function makeCapitalChart(id, config) {
+  if (capitalCharts[id]) { capitalCharts[id].destroy(); }
+  capitalCharts[id] = new Chart(document.getElementById(id), config);
+}
+
+function renderCapitalAll(prefix, ts) {
+  makeCapitalChart(prefix+"Capital", { type:"bar", data:{ labels:periods, datasets:[
+    { label:"Капитал, трлн руб.", data: ts.capital, backgroundColor:"#3fbf7f" }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"трлн руб."}} } }) });
+
+  makeCapitalChart(prefix+"N1", { type:"line", data:{ labels:periods, datasets:[
+    { label:"Н1.0, %", data: ts.n1_0, borderColor:"#f2b84b", backgroundColor:"rgba(242,184,75,.08)", fill:true, tension:.25, spanGaps:true }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+
+  makeCapitalChart(prefix+"Roa", { type:"line", data:{ labels:periods, datasets:[
+    { label:"ROA за период (аннуализ.)", data: ts.roa_month, borderColor:"#93a3b4", backgroundColor:"transparent", tension:.25, spanGaps:true, borderDash:[4,3] },
+    { label:"ROA YTD", data: ts.roa_ytd, borderColor:"#e2604f", backgroundColor:"transparent", tension:.25, spanGaps:true, borderWidth:2.5 }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+
+  makeCapitalChart(prefix+"Roe", { type:"line", data:{ labels:periods, datasets:[
+    { label:"ROE за период (аннуализ.)", data: ts.roe_month, borderColor:"#93a3b4", backgroundColor:"transparent", tension:.25, spanGaps:true, borderDash:[4,3] },
+    { label:"ROE YTD", data: ts.roe_ytd, borderColor:"#4f8cff", backgroundColor:"transparent", tension:.25, spanGaps:true, borderWidth:2.5 }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+
+  makeCapitalChart(prefix+"AssetsCat", { type:"bar", data:{ labels:periods, datasets: stackedBarDatasets(ts,"assets_by_cat",ASSET_LABELS,ASSET_COLORS) },
+    options: baseOpts({ scales:{ x:{ ...baseOpts().scales.x, stacked:true }, y:{ stacked:true, title:{display:true,text:"млрд руб."} } } }) });
+
+  makeCapitalChart(prefix+"AssetsGrowth", { type:"line", data:{ labels:periods, datasets:[
+    { label:"г/г, %", data: ts.assets_yoy, borderColor:"#4f8cff", backgroundColor:"transparent", tension:.25, spanGaps:true },
+    { label:"с начала года (YTD), %", data: ts.assets_ytd_growth, borderColor:"#3fbf7f", backgroundColor:"transparent", tension:.25, spanGaps:true }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+
+  makeCapitalChart(prefix+"AssetsStruct", { type:"line", data:{ labels:periods, datasets: structureDatasets(ts,"assets_by_cat",ASSET_LABELS,ASSET_COLORS).map(d=>({...d, backgroundColor: d.borderColor+"33"})) },
+    options: baseOpts({ scales:{ x:{...baseOpts().scales.x, stacked:true}, y:{ stacked:true, min:0, max:100, title:{display:true,text:"%"} } } }) });
+
+  makeCapitalChart(prefix+"LiabCat", { type:"bar", data:{ labels:periods, datasets: stackedBarDatasets(ts,"liab_by_cat",LIAB_LABELS,LIAB_COLORS) },
+    options: baseOpts({ scales:{ x:{ ...baseOpts().scales.x, stacked:true }, y:{ stacked:true, title:{display:true,text:"млрд руб."} } } }) });
+
+  makeCapitalChart(prefix+"LiabGrowth", { type:"line", data:{ labels:periods, datasets:[
+    { label:"г/г, %", data: ts.liab_yoy, borderColor:"#4f8cff", backgroundColor:"transparent", tension:.25, spanGaps:true },
+    { label:"с начала года (YTD), %", data: ts.liab_ytd_growth, borderColor:"#3fbf7f", backgroundColor:"transparent", tension:.25, spanGaps:true }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+
+  makeCapitalChart(prefix+"LiabStruct", { type:"line", data:{ labels:periods, datasets: structureDatasets(ts,"liab_by_cat",LIAB_LABELS,LIAB_COLORS).map(d=>({...d, backgroundColor: d.borderColor+"33"})) },
+    options: baseOpts({ scales:{ x:{...baseOpts().scales.x, stacked:true}, y:{ stacked:true, min:0, max:100, title:{display:true,text:"%"} } } }) });
+
+  makeCapitalChart(prefix+"CreditCat", { type:"bar", data:{ labels:periods, datasets: stackedBarDatasets(ts,"credit_sub",CREDIT_LABELS,CREDIT_COLORS) },
+    options: baseOpts({ scales:{ x:{ ...baseOpts().scales.x, stacked:true }, y:{ stacked:true, title:{display:true,text:"млрд руб."} } } }) });
+
+  makeCapitalChart(prefix+"CreditGrowth", { type:"line", data:{ labels:periods, datasets:[
+    { label:"г/г, %", data: ts.credit_yoy, borderColor:"#4f8cff", backgroundColor:"transparent", tension:.25, spanGaps:true },
+    { label:"с начала года (YTD), %", data: ts.credit_ytd_growth, borderColor:"#3fbf7f", backgroundColor:"transparent", tension:.25, spanGaps:true }
+  ]}, options: baseOpts({ scales:{ x: baseOpts().scales.x, y:{title:{display:true,text:"%"}} } }) });
+}
+
+renderCapitalAll("sector", CAPITAL_DATA.sector);
+
+const capitalBanks = CAPITAL_DATA.banks;
+const bankIdsByAssets = Object.keys(capitalBanks).sort((a,b) => {
+  const la = capitalBanks[a].assets.filter(v=>v!=null).pop() || 0;
+  const lb = capitalBanks[b].assets.filter(v=>v!=null).pop() || 0;
+  return lb - la;
+});
+const capitalSelectEl = document.getElementById("capitalBankSelect");
+bankIdsByAssets.forEach(id => {
+  const opt = document.createElement("option"); opt.value = id; opt.textContent = capitalBanks[id].name;
+  capitalSelectEl.appendChild(opt);
+});
+function selectCapitalBank(id) {
+  const rank = bankIdsByAssets.indexOf(id) + 1;
+  document.getElementById("bankRankBadge").textContent = "#" + rank + " по активам на " + periods[periods.length-1];
+  renderCapitalAll("bank", capitalBanks[id]);
+}
+capitalSelectEl.onchange = () => { selectCapitalBank(capitalSelectEl.value); renderCapitalTable(capitalSelectEl.value); };
+capitalSelectEl.value = bankIdsByAssets[0];
+selectCapitalBank(bankIdsByAssets[0]);
+
+const capitalLastIdx = periods.length - 1;
+const capitalTbody = document.querySelector("#summaryTable tbody");
+function renderCapitalTable(selectedId) {
+  capitalTbody.innerHTML = "";
+  bankIdsByAssets.forEach(id => {
+    const b = capitalBanks[id];
+    const tr = document.createElement("tr");
+    if (id === selectedId) tr.className = "highlight";
+    const fmt = (v,d=1) => v==null ? "&mdash;" : v.toLocaleString("ru-RU",{minimumFractionDigits:d, maximumFractionDigits:d});
+    const cls = (v) => v!=null && v<0 ? "neg" : "pos";
+    tr.innerHTML = `<td>${b.name}</td><td class="num">${fmt(b.assets[capitalLastIdx],0)}</td><td class="num">${fmt(b.capital[capitalLastIdx],0)}</td><td class="num">${fmt(b.n1_0[capitalLastIdx])}</td><td class="num ${cls(b.roe_month[capitalLastIdx])}">${fmt(b.roe_month[capitalLastIdx])}</td><td class="num ${cls(b.roe_ytd[capitalLastIdx])}">${fmt(b.roe_ytd[capitalLastIdx])}</td><td class="num ${cls(b.roa_month[capitalLastIdx])}">${fmt(b.roa_month[capitalLastIdx])}</td><td class="num ${cls(b.roa_ytd[capitalLastIdx])}">${fmt(b.roa_ytd[capitalLastIdx])}</td>`;
+    tr.style.cursor = "pointer";
+    tr.onclick = () => { capitalSelectEl.value = id; selectCapitalBank(id); renderCapitalTable(id); };
+    capitalTbody.appendChild(tr);
+  });
+}
+renderCapitalTable(bankIdsByAssets[0]);
+
+/* --- вложенные вкладки (сектор / по банку) внутри "Капитал" --- */
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("view-" + tab.dataset.view).classList.add("active");
+  };
+});
+
+/* --- верхние вкладки (CIR / Капитал) --- */
+document.querySelectorAll(".toplevel-tab").forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll(".toplevel-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".toplevel-panel").forEach(v=>v.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.target).classList.add("active");
+  };
 });
 </script>
 </body>

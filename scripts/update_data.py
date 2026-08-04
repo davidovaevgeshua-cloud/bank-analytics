@@ -1,5 +1,10 @@
 """
-Главный скрипт обновления. Логика:
+Главный скрипт обновления CIR. Логика не изменилась, поменялась только
+финальная сборка страницы: раньше она вызывала render_report.render()
+напрямую (только CIR), теперь — render_combined.render() (собирает
+index.html из ОБОИХ источников: cir_history.json и capital_history.json),
+чтобы вкладка "Капитал" на странице не затиралась, когда обновляется
+только CIR.
 
 1. По data/state.json определяем следующий период, который ещё
    не проверяли (следующий месяц после последнего, что есть в истории).
@@ -7,7 +12,7 @@
    опубликовал несколько периодов вперёд, — ещё пару следующих).
 3. Если архив есть — распаковываем, парсим _P1.dbf и NP1.dbf,
    дописываем данные в data/cir_history.json.
-4. Пересобираем index.html.
+4. Пересобираем index.html (обе вкладки).
 5. Печатаем итог в stdout — это увидит лог GitHub Actions,
    а сам workflow закоммитит изменённые файлы, если они появились.
 
@@ -23,7 +28,7 @@ from pathlib import Path
 from dbf_parser import parse_p1
 from download_period import download_archive, extract_archive
 from compute_cir import load_history, save_history, ingest_period
-from render_report import render
+from render_combined import render
 
 ROOT = Path(__file__).resolve().parent.parent
 HISTORY_PATH = ROOT / "data" / "cir_history.json"
@@ -77,7 +82,6 @@ def process_one_period(period_label: str, history: dict) -> bool:
     if archive is None:
         return False
     files = extract_archive(archive, dest)
-    p1_files = [f for f in files if f.name.upper().endswith("_P1.DBF") or f.name.upper().endswith("P1.DBF")]
     p1_target = next((f for f in files if f.stem.upper().endswith("_P1")), None)
     if p1_target is None:
         raise RuntimeError(f"В архиве за {period_label} не нашёлся файл _P1.dbf: {[f.name for f in files]}")
@@ -109,7 +113,7 @@ def main():
     if processed:
         save_history(history, HISTORY_PATH)
         save_state(state)
-        out = render(HISTORY_PATH, ROOT / "scripts" / "report_template.html", ROOT / "index.html")
+        out = render(ROOT / "index.html")
         print(f"Обновлены периоды: {processed}. Страница пересобрана: {out}")
     else:
         print("Новых периодов не найдено, обновление не требуется.")
