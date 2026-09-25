@@ -1921,6 +1921,68 @@
      "debit_itogo": 133613488.0
     }
    }
+  },
+  "082026": {
+   "date": "2026-09-01",
+   "n_banks": 346,
+   "sector": {
+    "credit_itogo": 275573627212.0,
+    "debit_itogo": 272480494962.0
+   },
+   "banks": {
+    "1481": {
+     "credit_itogo": 197159440660.0,
+     "debit_itogo": 195826733379.0
+    },
+    "1000": {
+     "credit_itogo": 33679115986.0,
+     "debit_itogo": 33300937663.0
+    },
+    "1326": {
+     "credit_itogo": 7802069175.0,
+     "debit_itogo": 7575809027.0
+    },
+    "354": {
+     "credit_itogo": 6775333126.0,
+     "debit_itogo": 6650666419.0
+    },
+    "2673": {
+     "credit_itogo": 2144077675.0,
+     "debit_itogo": 2012311585.0
+    },
+    "841": {
+     "credit_itogo": 205862647.0,
+     "debit_itogo": 117394783.0
+    },
+    "963": {
+     "credit_itogo": 1373909078.0,
+     "debit_itogo": 1287789338.0
+    },
+    "2312": {
+     "credit_itogo": 837118006.0,
+     "debit_itogo": 763257547.0
+    },
+    "3292": {
+     "credit_itogo": 6078235653.0,
+     "debit_itogo": 6018336089.0
+    },
+    "3349": {
+     "credit_itogo": 1593324006.0,
+     "debit_itogo": 1520816056.0
+    },
+    "1978": {
+     "credit_itogo": 1860843166.0,
+     "debit_itogo": 1842931051.0
+    },
+    "3027": {
+     "credit_itogo": 138060755.0,
+     "debit_itogo": 128156994.0
+    },
+    "3542": {
+     "credit_itogo": 186531863.0,
+     "debit_itogo": 159014117.0
+    }
+   }
   }
  }
 }
